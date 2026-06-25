@@ -23,16 +23,11 @@ Publish config (optional):
 php artisan vendor:publish --tag=laravel-mcp-fetch-config
 ```
 
-## Registration
+## MCP registration
 
-This package does **not** auto-register MCP routes. Wire the server in your app's `routes/ai.php`:
+This package **auto-registers** MCP routes when `laravel/mcp` is installed:
 
-```php
-use Eloquage\LaravelMcpFetch\Mcp\Servers\FetchServer;
-use Laravel\Mcp\Facades\Mcp;
-
-Mcp::local('fetch', FetchServer::class);
-```
+- Local handle: `fetch` (configurable via `MCP_FETCH_LOCAL_HANDLE`)
 
 Start the local MCP server:
 
@@ -105,6 +100,28 @@ $result = app(UrlFetchService::class)->fetch('https://example.com', maxLength: 5
 | `user_agent`         | `MCP_FETCH_USER_AGENT` | `eloquage/laravel-mcp-fetch` |
 | `default_max_length` | —                      | 5000                         |
 | `max_max_length`     | —                      | 1000000                      |
+
+## Docker
+
+Published to [GHCR](https://github.com/miguelenes/laravel-mcp-fetch/pkgs/container/laravel-mcp-fetch) on tag push.
+
+```json
+{
+    "mcpServers": {
+        "fetch": {
+            "command": "docker",
+            "args": ["run", "-i", "--rm", "ghcr.io/miguelenes/laravel-mcp-fetch:latest"]
+        }
+    }
+}
+```
+
+Local build:
+
+```bash
+docker build -t mcp-fetch:local --build-arg PACKAGE_VERSION=dev .
+docker run --rm -i mcp-fetch:local
+```
 
 ## Testing
 

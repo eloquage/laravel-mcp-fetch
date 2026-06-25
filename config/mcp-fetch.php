@@ -3,6 +3,9 @@
 declare(strict_types=1);
 
 return [
+    'mcp' => [
+        'local_handle' => env('MCP_FETCH_LOCAL_HANDLE', 'fetch'),
+    ],
     'timeout' => (int) env('MCP_FETCH_TIMEOUT', 30),
     'user_agent' => env('MCP_FETCH_USER_AGENT', 'eloquage/laravel-mcp-fetch'),
     'default_max_length' => 5000,

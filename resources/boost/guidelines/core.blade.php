@@ -4,14 +4,7 @@ MCP fetch server matching the official fetch tool schema.
 
 ## Registration
 
-Apps wire the server in `routes/ai.php` (not auto-registered by the package):
-
-```php
-use Eloquage\LaravelMcpFetch\Mcp\Servers\FetchServer;
-use Laravel\Mcp\Facades\Mcp;
-
-Mcp::local('fetch', FetchServer::class);
-```
+Auto-registers local handle `fetch` when `laravel/mcp` is installed (override via `MCP_FETCH_LOCAL_HANDLE`).
 
 Start via `php artisan mcp:start fetch`.
 
@@ -27,3 +20,18 @@ Start via `php artisan mcp:start fetch`.
 ## Service
 
 `Eloquage\LaravelMcpFetch\Services\UrlFetchService::fetch()` — usable outside MCP.
+
+## Docker
+
+Image: `ghcr.io/miguelenes/laravel-mcp-fetch`
+
+```json
+{
+    "mcpServers": {
+        "fetch": {
+            "command": "docker",
+            "args": ["run", "-i", "--rm", "ghcr.io/miguelenes/laravel-mcp-fetch:latest"]
+        }
+    }
+}
+```
