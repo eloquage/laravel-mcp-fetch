@@ -103,14 +103,14 @@ $result = app(UrlFetchService::class)->fetch('https://example.com', maxLength: 5
 
 ## Docker
 
-Published to [GHCR](https://github.com/miguelenes/laravel-mcp-fetch/pkgs/container/laravel-mcp-fetch) on tag push.
+Published to [GHCR](https://github.com/eloquage/laravel-mcp-fetch/pkgs/container/laravel-mcp-fetch) on tag push.
 
 ```json
 {
     "mcpServers": {
         "fetch": {
             "command": "docker",
-            "args": ["run", "-i", "--rm", "ghcr.io/miguelenes/laravel-mcp-fetch:latest"]
+            "args": ["run", "-i", "--rm", "ghcr.io/eloquage/laravel-mcp-fetch:latest"]
         }
     }
 }

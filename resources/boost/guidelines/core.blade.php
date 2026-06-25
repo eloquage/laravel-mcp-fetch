@@ -23,14 +23,14 @@ Start via `php artisan mcp:start fetch`.
 
 ## Docker
 
-Image: `ghcr.io/miguelenes/laravel-mcp-fetch`
+Image: `ghcr.io/eloquage/laravel-mcp-fetch`
 
 ```json
 {
     "mcpServers": {
         "fetch": {
             "command": "docker",
-            "args": ["run", "-i", "--rm", "ghcr.io/miguelenes/laravel-mcp-fetch:latest"]
+            "args": ["run", "-i", "--rm", "ghcr.io/eloquage/laravel-mcp-fetch:latest"]
         }
     }
 }
