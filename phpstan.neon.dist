@@ -6,5 +6,8 @@ parameters:
     paths:
         - src
         - config
-        - database
     tmpDir: build/phpstan
+    ignoreErrors:
+        -
+            message: '#Called ''env'' outside of the config directory#'
+            path: config/*
