@@ -11,6 +11,7 @@ MCP fetch server matching the [official MCP fetch tool schema](https://github.co
 ## Requirements
 
 - PHP 8.4+
+- PHP cURL extension (`ext-curl`)
 - Laravel 12 or 13
 - `laravel/mcp` ^0.9
 
@@ -96,7 +97,7 @@ The `fetch` tool accepts a public HTTP or HTTPS URL. For example, a client can c
 
 ## SSRF protection
 
-Only public `http` and `https` URLs are allowed. Private IPs, localhost, and link-local addresses are blocked before any HTTP request is made.
+Only globally routable `http` and `https` URLs are allowed. Private, shared, reserved, and documentation IP ranges are blocked before any HTTP request is made. Hostname answers are pinned to the validated public IP addresses for the request, redirects are disabled, and proxy settings are bypassed because a proxy resolves destinations outside this validation.
 
 ## Use the service in Laravel
 

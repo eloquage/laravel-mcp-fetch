@@ -18,17 +18,18 @@ class UrlFetchService
         int $startIndex = 0,
         bool $raw = false,
     ): array {
-        $blocked = $this->rejectPrivateUrl($url);
+        $validation = $this->validatePublicUrl($url);
 
-        if ($blocked !== null) {
+        if (isset($validation['error'])) {
             return [
                 'success' => false,
-                'error' => $blocked,
+                'error' => $validation['error'],
             ];
         }
 
         try {
             $response = Http::timeout((int) config('mcp-fetch.timeout', 30))
+                ->withOptions($this->requestOptions($validation['resolve']))
                 ->withoutRedirecting()
                 ->withHeaders([
                     'User-Agent' => (string) config('mcp-fetch.user_agent', 'eloquage/laravel-mcp-fetch'),
@@ -74,22 +75,26 @@ class UrlFetchService
         }
     }
 
-    private function rejectPrivateUrl(string $url): ?string
+    /**
+     * @return array{error: string}|array{resolve: string|null}
+     */
+    private function validatePublicUrl(string $url): array
     {
         $parsed = parse_url($url);
         $scheme = strtolower($parsed['scheme'] ?? '');
 
         if (! in_array($scheme, ['http', 'https'], true)) {
-            return 'Only http and https URLs are allowed.';
+            return ['error' => 'Only http and https URLs are allowed.'];
         }
 
         $host = strtolower(trim($parsed['host'] ?? '', '[]'));
 
         if ($host === '' || in_array($host, ['localhost', '127.0.0.1', '0.0.0.0', '::1'], true)) {
-            return 'Private or local URLs are not allowed.';
+            return ['error' => 'Private or local URLs are not allowed.'];
         }
 
-        $ips = filter_var($host, FILTER_VALIDATE_IP) !== false
+        $isIpAddress = filter_var($host, FILTER_VALIDATE_IP) !== false;
+        $ips = $isIpAddress
             ? [$host]
             : array_values(array_filter(array_map(
                 static fn (array $record): ?string => $record['ip'] ?? $record['ipv6'] ?? null,
@@ -97,25 +102,50 @@ class UrlFetchService
             )));
 
         if ($ips === []) {
-            return "Could not resolve host: {$host}";
+            return ['error' => "Could not resolve host: {$host}"];
         }
 
         foreach ($ips as $ip) {
-            if ($this->isPrivateIp($ip)) {
-                return 'Private or local URLs are not allowed.';
+            if (! $this->isPublicIp($ip)) {
+                return ['error' => 'Private or local URLs are not allowed.'];
             }
         }
 
-        return null;
+        if ($isIpAddress) {
+            return ['resolve' => null];
+        }
+
+        $port = $parsed['port'] ?? ($scheme === 'https' ? 443 : 80);
+        $addresses = implode(',', array_map(
+            static fn (string $ip): string => str_contains($ip, ':') ? "[{$ip}]" : $ip,
+            $ips,
+        ));
+
+        return ['resolve' => "{$host}:{$port}:{$addresses}"];
     }
 
-    private function isPrivateIp(string $ip): bool
+    /** @return array{proxy: array{http: string, https: string}, curl?: array<int, list<string>>} */
+    private function requestOptions(?string $resolve): array
+    {
+        $options = [
+            // A proxy resolves the destination itself, outside this IP validation.
+            'proxy' => ['http' => '', 'https' => ''],
+        ];
+
+        if ($resolve !== null) {
+            $options['curl'] = [CURLOPT_RESOLVE => [$resolve]];
+        }
+
+        return $options;
+    }
+
+    private function isPublicIp(string $ip): bool
     {
         return filter_var(
             $ip,
             FILTER_VALIDATE_IP,
-            FILTER_FLAG_IPV4 | FILTER_FLAG_IPV6 | FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE
-        ) === false;
+            FILTER_FLAG_IPV4 | FILTER_FLAG_IPV6 | FILTER_FLAG_GLOBAL_RANGE,
+        ) !== false;
     }
 
     private function htmlToText(string $html): string

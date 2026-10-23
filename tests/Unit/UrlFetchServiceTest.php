@@ -22,6 +22,14 @@ it('fetches and simplifies html content', function () {
         ->and($result['start_index'])->toBe(0);
 });
 
+it('pins DNS-resolved addresses and bypasses proxies', function () {
+    $method = new ReflectionMethod(UrlFetchService::class, 'requestOptions');
+    $options = $method->invoke(new UrlFetchService, 'example.com:443:93.184.216.34');
+
+    expect($options['curl'][CURLOPT_RESOLVE])->toBe(['example.com:443:93.184.216.34'])
+        ->and($options['proxy'])->toBe(['http' => '', 'https' => '']);
+});
+
 it('extracts main content from article tags', function () {
     Http::fake([
         'https://example.com/article' => Http::response(
@@ -167,4 +175,21 @@ it('rejects 172.16.x private ip addresses', function () {
 
     expect($result['success'])->toBeFalse()
         ->and($result['error'])->toContain('Private or local');
+});
+
+it('rejects shared carrier-grade NAT addresses', function () {
+    $result = (new UrlFetchService)->fetch('http://100.64.0.1/internal');
+
+    expect($result['success'])->toBeFalse()
+        ->and($result['error'])->toContain('Private or local');
+});
+
+it('rejects non-global documentation addresses', function () {
+    $ipv4 = (new UrlFetchService)->fetch('http://203.0.113.1/example');
+    $ipv6 = (new UrlFetchService)->fetch('http://[2001:db8::1]/example');
+
+    expect($ipv4['success'])->toBeFalse()
+        ->and($ipv4['error'])->toContain('Private or local')
+        ->and($ipv6['success'])->toBeFalse()
+        ->and($ipv6['error'])->toContain('Private or local');
 });
