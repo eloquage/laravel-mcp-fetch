@@ -22,6 +22,14 @@ it('fetches and simplifies html content', function () {
         ->and($result['start_index'])->toBe(0);
 });
 
+it('pins DNS-resolved addresses and bypasses proxies', function () {
+    $method = new ReflectionMethod(UrlFetchService::class, 'requestOptions');
+    $options = $method->invoke(new UrlFetchService, 'example.com:443:93.184.216.34');
+
+    expect($options['curl'][CURLOPT_RESOLVE])->toBe(['example.com:443:93.184.216.34'])
+        ->and($options['proxy'])->toBe(['http' => '', 'https' => '']);
+});
+
 it('extracts main content from article tags', function () {
     Http::fake([
         'https://example.com/article' => Http::response(
@@ -83,6 +91,21 @@ it('returns error on http failure', function () {
         ->and($result['error'])->toContain('HTTP 404');
 });
 
+it('does not follow redirects to private hosts', function () {
+    Http::fake([
+        'https://example.com/redirect' => Http::response('', 302, [
+            'Location' => 'http://127.0.0.1/admin',
+        ]),
+    ]);
+
+    $result = (new UrlFetchService)->fetch('https://example.com/redirect');
+
+    expect($result['success'])->toBeFalse()
+        ->and($result['error'])->toContain('HTTP 302');
+
+    Http::assertSentCount(1);
+});
+
 it('returns error on server error', function () {
     Http::fake([
         'https://example.com/error' => Http::response('Error', 500),
@@ -140,9 +163,33 @@ it('rejects link-local ip addresses', function () {
         ->and($result['error'])->toContain('Private or local');
 });
 
+it('rejects private ipv6 addresses', function () {
+    $result = (new UrlFetchService)->fetch('http://[fc00::1]/internal');
+
+    expect($result['success'])->toBeFalse()
+        ->and($result['error'])->toContain('Private or local');
+});
+
 it('rejects 172.16.x private ip addresses', function () {
     $result = (new UrlFetchService)->fetch('http://172.16.0.1/internal');
 
     expect($result['success'])->toBeFalse()
         ->and($result['error'])->toContain('Private or local');
+});
+
+it('rejects shared carrier-grade NAT addresses', function () {
+    $result = (new UrlFetchService)->fetch('http://100.64.0.1/internal');
+
+    expect($result['success'])->toBeFalse()
+        ->and($result['error'])->toContain('Private or local');
+});
+
+it('rejects non-global documentation addresses', function () {
+    $ipv4 = (new UrlFetchService)->fetch('http://203.0.113.1/example');
+    $ipv6 = (new UrlFetchService)->fetch('http://[2001:db8::1]/example');
+
+    expect($ipv4['success'])->toBeFalse()
+        ->and($ipv4['error'])->toContain('Private or local')
+        ->and($ipv6['success'])->toBeFalse()
+        ->and($ipv6['error'])->toContain('Private or local');
 });

@@ -1,5 +1,7 @@
 # Laravel MCP Fetch
 
+![Laravel MCP Fetch](art/banner.png)
+
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/eloquage/laravel-mcp-fetch.svg?style=flat-square)](https://packagist.org/packages/eloquage/laravel-mcp-fetch)
 [![GitHub Tests Action Status](https://github.com/eloquage/laravel-mcp-fetch/actions/workflows/run-tests.yml/badge.svg)](https://github.com/eloquage/laravel-mcp-fetch/actions?query=workflow%3Arun-tests+branch%3Amain)
 [![Total Downloads](https://img.shields.io/packagist/dt/eloquage/laravel-mcp-fetch.svg?style=flat-square)](https://packagist.org/packages/eloquage/laravel-mcp-fetch)
@@ -9,7 +11,9 @@ MCP fetch server matching the [official MCP fetch tool schema](https://github.co
 ## Requirements
 
 - PHP 8.4+
-- `laravel/mcp` ^0.8
+- PHP cURL extension (`ext-curl`)
+- Laravel 12 or 13
+- `laravel/mcp` ^0.9
 
 ## Installation
 
@@ -20,14 +24,14 @@ composer require eloquage/laravel-mcp-fetch
 Publish config (optional):
 
 ```bash
-php artisan vendor:publish --tag=laravel-mcp-fetch-config
+php artisan vendor:publish --tag=mcp-fetch-config
 ```
 
-## MCP registration
+## Run the MCP server
 
-This package **auto-registers** MCP routes when `laravel/mcp` is installed:
+Laravel package discovery registers the MCP server automatically:
 
-- Local handle: `fetch` (configurable via `MCP_FETCH_LOCAL_HANDLE`)
+- The default local handle is `fetch`. Set `MCP_FETCH_LOCAL_HANDLE` to change it.
 
 Start the local MCP server:
 
@@ -48,7 +52,18 @@ php artisan mcp:start fetch
 }
 ```
 
-## Tool: `fetch`
+## Fetch a URL
+
+The `fetch` tool accepts a public HTTP or HTTPS URL. For example, a client can call it with:
+
+```json
+{
+  "url": "https://example.com/article",
+  "max_length": 5000
+}
+```
+
+## Tool reference: `fetch`
 
 | Parameter     | Type         | Required | Default | Description                                         |
 | ------------- | ------------ | -------- | ------- | --------------------------------------------------- |
@@ -82,9 +97,9 @@ php artisan mcp:start fetch
 
 ## SSRF protection
 
-Only public `http` and `https` URLs are allowed. Private IPs, localhost, and link-local addresses are blocked before any HTTP request is made.
+Only globally routable `http` and `https` URLs are allowed. Private, shared, reserved, and documentation IP ranges are blocked before any HTTP request is made. Hostname answers are pinned to the validated public IP addresses for the request, redirects are disabled, and proxy settings are bypassed because a proxy resolves destinations outside this validation.
 
-## Programmatic usage
+## Use the service in Laravel
 
 ```php
 use Eloquage\LaravelMcpFetch\Services\UrlFetchService;
