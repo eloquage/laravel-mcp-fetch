@@ -29,6 +29,7 @@ class UrlFetchService
 
         try {
             $response = Http::timeout((int) config('mcp-fetch.timeout', 30))
+                ->withoutRedirecting()
                 ->withHeaders([
                     'User-Agent' => (string) config('mcp-fetch.user_agent', 'eloquage/laravel-mcp-fetch'),
                     'Accept' => (string) config('mcp-fetch.accept', 'text/html,application/xhtml+xml,text/plain,*/*'),
@@ -82,17 +83,20 @@ class UrlFetchService
             return 'Only http and https URLs are allowed.';
         }
 
-        $host = strtolower($parsed['host'] ?? '');
+        $host = strtolower(trim($parsed['host'] ?? '', '[]'));
 
-        if ($host === '' || in_array($host, ['localhost', '127.0.0.1', '0.0.0.0', '::1', '[::1]'], true)) {
+        if ($host === '' || in_array($host, ['localhost', '127.0.0.1', '0.0.0.0', '::1'], true)) {
             return 'Private or local URLs are not allowed.';
         }
 
         $ips = filter_var($host, FILTER_VALIDATE_IP) !== false
             ? [$host]
-            : gethostbynamel($host);
+            : array_values(array_filter(array_map(
+                static fn (array $record): ?string => $record['ip'] ?? $record['ipv6'] ?? null,
+                dns_get_record($host, DNS_A | DNS_AAAA) ?: [],
+            )));
 
-        if ($ips === false || $ips === []) {
+        if ($ips === []) {
             return "Could not resolve host: {$host}";
         }
 

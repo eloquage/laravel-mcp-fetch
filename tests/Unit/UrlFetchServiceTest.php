@@ -83,6 +83,21 @@ it('returns error on http failure', function () {
         ->and($result['error'])->toContain('HTTP 404');
 });
 
+it('does not follow redirects to private hosts', function () {
+    Http::fake([
+        'https://example.com/redirect' => Http::response('', 302, [
+            'Location' => 'http://127.0.0.1/admin',
+        ]),
+    ]);
+
+    $result = (new UrlFetchService)->fetch('https://example.com/redirect');
+
+    expect($result['success'])->toBeFalse()
+        ->and($result['error'])->toContain('HTTP 302');
+
+    Http::assertSentCount(1);
+});
+
 it('returns error on server error', function () {
     Http::fake([
         'https://example.com/error' => Http::response('Error', 500),
@@ -135,6 +150,13 @@ it('rejects 10.x private ip addresses', function () {
 
 it('rejects link-local ip addresses', function () {
     $result = (new UrlFetchService)->fetch('http://169.254.1.1/metadata');
+
+    expect($result['success'])->toBeFalse()
+        ->and($result['error'])->toContain('Private or local');
+});
+
+it('rejects private ipv6 addresses', function () {
+    $result = (new UrlFetchService)->fetch('http://[fc00::1]/internal');
 
     expect($result['success'])->toBeFalse()
         ->and($result['error'])->toContain('Private or local');
