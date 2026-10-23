@@ -11,6 +11,7 @@ MCP fetch server matching the [official MCP fetch tool schema](https://github.co
 ## Requirements
 
 - PHP 8.4+
+- Laravel 12 or 13
 - `laravel/mcp` ^0.9
 
 ## Installation
