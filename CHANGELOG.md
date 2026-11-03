@@ -2,6 +2,10 @@
 
 All notable changes to `laravel-mcp-fetch` will be documented in this file.
 
+## v1.0.4 - 2026-11-03
+
+- Refresh the package changelog.
+
 ## v1.0.3 - 2026-10-23
 
 ### Security and release readiness
